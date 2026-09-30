@@ -1,5 +1,7 @@
 # OCHIQ-EKO-LEDGER MVP — ishlaydigan prototip
 
+[![CI](https://github.com/jasur-ai/eco-ledger-mvp/actions/workflows/ci.yml/badge.svg)](https://github.com/jasur-ai/eco-ledger-mvp/actions/workflows/ci.yml) · **Repo:** https://github.com/jasur-ai/eco-ledger-mvp · **Bot:** [@ecoledg_bot](https://t.me/ecoledg_bot)
+
 > Bu papka — **TZ (`../TZ/Loyiha2_Ochiq_Eko_Ledger_MVP_TZ.md`) bo'yicha S0–S7 bosqichlarning bajarilgan prototipi**.
 > Har bir fayl TZ'dagi tegishli bosqichning "Deliverable" ustuniga mos keladi.
 

@@ -1,5 +1,8 @@
 # Demo videolar — kadr-kadr storyboard (yozishga tayyor)
 
+> **Tayyor nusxalar:** `YAKUNIY/video/demo-xarita.gif` (Video 1, 46 s) va `demo-model.gif` (Video 4, 45 s) —
+> haqiqiy buyruq chiqishlaridan generatsiya qilingan; `.srt` subtitrlar yonida.
+>
 > 4 video · jami ~8 daqiqa · har bir kadr uchun: vaqt, ekran, harakat, **ovoz matni** (to'g'ridan-to'g'ri o'qish mumkin).
 > Yozish asboblari: `ffmpeg` (Linux) yoki OBS. Subtitr: shu papkadagi `.srt` fayllar.
 > Har video oxirida **jonli tekshiruv** ko'rsatiladi (`bot_healthcheck.sh` / `pytest`) — da'vo emas, dalil.

@@ -1,7 +1,10 @@
 # Demo videolar — kadr-kadr storyboard (yozishga tayyor)
 
-> **Tayyor nusxalar:** `YAKUNIY/video/demo-xarita.gif` (Video 1, 46 s) va `demo-model.gif` (Video 4, 45 s) —
-> haqiqiy buyruq chiqishlaridan generatsiya qilingan; `.srt` subtitrlar yonida.
+> **Tayyor nusxalar (4/4 — GIF avtomatik yozuv):** `YAKUNIY/video/` ichida `demo-xarita.gif` (Video 1 · 47,4 s),
+> `demo-murojaat.gif` (Video 2 · 25,8 s), `demo-llm.gif` (Video 3 · 25,8 s), `demo-model.gif` (Video 4 · 45,4 s) —
+> haqiqiy buyruq chiqishlaridan generatsiya qilingan; `.srt` subtitrlar va tekshiruv varaqlari yonida.
+> Quyidagi jadval — **jonli ovozli yozuv** (2 daqiqali versiyalar) uchun kadr-kadr reja; GIF'lar o'sha rejaning
+> qisqartirilgan, ovozsiz ko'rgazma nusxasi.
 >
 > 4 video · jami ~8 daqiqa · har bir kadr uchun: vaqt, ekran, harakat, **ovoz matni** (to'g'ridan-to'g'ri o'qish mumkin).
 > Yozish asboblari: `ffmpeg` (Linux) yoki OBS. Subtitr: shu papkadagi `.srt` fayllar.

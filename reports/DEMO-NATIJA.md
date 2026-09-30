@@ -33,7 +33,7 @@ Klass taqsimoti: red=4, yellow=4, green=62, blue=8 · «tekshiruv kutilmoqda» (
 - SLA hisoboti: median javob = 4.0 kun, muddatga rioya = 100.0%, ochiq = 5, muddati o'tgan = 1
 - 7/10/15-kun hodisalari: [{"code": "A-2026-000004", "kind": "escalate", "age_days": 20.0}, {"code": "A-2026-000001", "kind": "overdue", "age_days": 15.0}, {"code": "A-2026-000002", "kind": "warn", "age_days": 8.0}]
 - Dublikat birlashtirish: {"merged_into": "A-2026-000006", "similarity": 1.0, "supporters_count": 2}
-- O'xshash guruh (0,55–0,85): G-d99700d7
+- O'xshash guruh (0,55–0,85): G-69f0def4
 
 ## 4. Matn generatori (S4 — verifikatsiya)
 

@@ -1,4 +1,4 @@
-.PHONY: install demo test serve bot docker clean
+.PHONY: install demo test serve bot backup docker clean
 
 install:
 	pip install -r requirements.txt
@@ -15,8 +15,14 @@ serve:
 bot:
 	python3 scripts/bot.py
 
+backup:
+	./deploy/backup.sh
+
 docker:
 	docker compose up --build
+
+prod:
+	docker compose -f deploy/docker-compose.prod.yml --env-file .env up -d --build
 
 clean:
 	rm -rf data/*.db web/map.html reports/DEMO-NATIJA.md data/measurements.csv

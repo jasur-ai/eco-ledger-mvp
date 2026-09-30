@@ -1,0 +1,68 @@
+# Ishlab chiqarish tarkibi (production). Ishga tushirish:
+#   docker compose -f deploy/docker-compose.prod.yml --env-file .env up -d --build
+services:
+  eco-api:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: eco-api
+    command: ["uvicorn", "src.api.app:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+    environment:
+      ECO_LEDGER_DB: /app/data/eco_ledger.db
+      ECO_API: http://eco-api:8000
+    volumes:
+      - eco-data:/app/data
+      - ./backups:/app/backups
+    ports:
+      - "127.0.0.1:8000:8000"          # faqat localhost — nginx orqali ochiladi
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/v1/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+
+  eco-bot:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: eco-bot
+    command: ["python3", "-u", "scripts/bot.py"]
+    environment:
+      ECO_API: http://eco-api:8000
+      ECO_BOT_TOKEN: ${ECO_BOT_TOKEN:?ECO_BOT_TOKEN kerak (.env)}
+    depends_on:
+      eco-api:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+
+  eco-scheduler:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: eco-scheduler
+    # 7/10/15-kun push-eslatmalar: 30 daqiqada bir sikl
+    command: ["python3", "-u", "scripts/sla_scheduler.py", "--interval", "1800"]
+    environment:
+      ECO_BOT_TOKEN: ${ECO_BOT_TOKEN:?ECO_BOT_TOKEN kerak (.env)}
+      ECO_ADMIN_CHAT_ID: ${ECO_ADMIN_CHAT_ID:-}
+      ECO_LEDGER_DB: /app/data/eco_ledger.db
+    volumes:
+      - eco-data:/app/data
+    depends_on:
+      eco-api:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+
+volumes:
+  eco-data:

@@ -1,0 +1,53 @@
+1
+00:00:00,000 --> 00:00:06,000
+Ochiq-Eko-Ledger — ekologik ma'lumotni ochiq hisoblash tizimi.
+
+2
+00:00:06,000 --> 00:00:12,000
+Avval bazani va 78 obyektli demo o'lchovlarni tayyorlaymiz.
+
+3
+00:00:12,000 --> 00:00:20,000
+Diqqat: klass taqsimotida to'rt xil rang bor —
+qizil, sariq, yashil va ko'k.
+
+4
+00:00:20,000 --> 00:00:30,000
+Ko'k — bu «toza» emas, «ma'lumot yo'q» degani.
+
+5
+00:00:30,000 --> 00:00:42,000
+Olmazor tumani — ko'k zona: o'lchov qamrovi 46 foiz.
+
+6
+00:00:42,000 --> 00:00:55,000
+Tizim bunday holatda «yashil» demaydi:
+kam o'lchov bilan «toza» deyish — soxta ishonch bo'lardi.
+
+7
+00:00:55,000 --> 00:01:08,000
+Yunusobod — qizil: R nisbati 6,2,
+ya'ni norma darajasidan olti baravar oshgan.
+
+8
+00:01:08,000 --> 00:01:20,000
+Chilonzor ham qizil: alohida sariq korxonalar birgalikda
+hududni qizilga chiqaradi — severity qoidasi shuni talab qiladi.
+
+9
+00:01:20,000 --> 00:01:32,000
+Xuddi shu rang qatlami ochiq API orqali beriladi:
+har bir zonada qamrov va qoida versiyasi ko'rinadi.
+
+10
+00:01:32,000 --> 00:01:44,000
+Qoida ML emas, sof Python — har bir rangni fuqaro ham,
+sud ham tekshira oladi. Qoida versiyasi muzlatilgan: 1.0.
+
+11
+00:01:44,000 --> 00:01:55,000
+Yakuniy dalil: to'rt nuqtali salomatlik tekshiruvi.
+
+12
+00:01:55,000 --> 00:02:10,000
+API, zona qatlami, bot va jarayon holati — hammasi joyida.

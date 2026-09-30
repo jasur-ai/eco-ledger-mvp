@@ -16,6 +16,8 @@ make serve                              # API (docs: /docs) — / da xarita
 make bot                                # jonli bot (token: .secrets/minds_keys.env)
 bash scripts/bot_healthcheck.sh         # 4 nuqtali salomatlik tekshiruvi
 make docker                             # api + (profil) bot
+make backup                             # baza zaxirasi (butunlik tekshiruvi bilan)
+docker compose -f deploy/docker-compose.prod.yml --env-file .env up -d   # production (api + bot + scheduler)
 ```
 
 ## Bosqichlar ↔ fayllar xaritasi (TZ §3)
@@ -29,7 +31,7 @@ make docker                             # api + (profil) bot
 | **S4** LLM matn generatori | `llm/prompt_v1.md`, `llm/verify.py`, 100 test-matn | ✅ `src/llm/generate.py`, `src/llm/prompt_v1.md` (deterministik shablon + 6 qavat verifikatsiya; API kaliti bo'lmasa ham ishlaydi) |
 | **S5** Telegram bot | aiogram bot, 6 ssenariy | ✅ **jonli ishlayapti: [@ecoledg_bot](https://t.me/ecoledg_bot)** — `scripts/bot.py`, 4 qadamli FSM, lokatsiya, dublikat javobi; qo'llanma `docs/BOT-ISHLATISH.md` |
 | **S6** Murojaat moduli | 7 holat, SLA, 25+ test | ✅ `src/murojaat/service.py`, `tests/test_murojaat.py` |
-| **S7** Test/demo/hujjat | CI, demo, hisobot | ✅ `tests/` (**141** — 16 tasi bot handlerlari) · `Dockerfile` · `docker-compose.yml` · `.github/workflows/ci.yml` · `docs/architecture.md` · `docs/limitations.md` · `docs/DEMO-SSENARIYLAR.md` |
+| **S7** Test/demo/hujjat | CI, demo, hisobot | ✅ `tests/` (**158** — 16 bot + 17 push-eslatma testi) · `Dockerfile` · `docker-compose.yml` · `.github/workflows/ci.yml` · `docs/architecture.md` · `docs/limitations.md` · `docs/DEMO-SSENARIYLAR.md` |
 
 ## Nima ishlaydi (haqiqiy natijalar)
 

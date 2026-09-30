@@ -1,0 +1,9 @@
+# Generatsiya qilinadigan artefaktlar (make demo bilan qayta tiklanadi)
+data/*.gz
+data/*.db
+models/*.joblib
+reports/figures/*.png.bak
+__pycache__/
+.pytest_cache/
+*.pyc
+.venv/

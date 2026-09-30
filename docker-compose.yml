@@ -1,0 +1,26 @@
+# S7 — API + (ixtiyoriy) bot (TZ §7.2: MVP — 1 server, 3 konteyner mantiqi)
+services:
+  eco-api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      ECO_LEDGER_DB: /app/data/eco_ledger.db
+      ECO_API: http://eco-api:8000
+    volumes:
+      - eco-data:/app/data
+    restart: unless-stopped
+
+  eco-bot:
+    build: .
+    profiles: ["bot"]            # token bo'lganda: docker compose --profile bot up
+    environment:
+      ECO_API: http://eco-api:8000
+      ECO_BOT_TOKEN: ${ECO_BOT_TOKEN:?ECO_BOT_TOKEN kerak}
+    command: ["python3", "scripts/bot.py"]
+    depends_on:
+      - eco-api
+    restart: unless-stopped
+
+volumes:
+  eco-data:

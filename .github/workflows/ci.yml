@@ -1,0 +1,32 @@
+# S7 — CI (MVP papkasi alohida repoga chiqarilganda ishlaydi)
+name: CI
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Bog'liqliklar
+        run: pip install -r requirements.txt
+      - name: Testlar (125 ta)
+        run: pytest -q tests/
+      - name: Demo smoke
+        run: |
+          python3 scripts/run_demo.py
+          python3 - <<'PY'
+          import json, pathlib, sys
+          sys.path.insert(0, ".")
+          from src import db
+          conn = db.connect()
+          n = conn.execute("SELECT COUNT(*) FROM facilities").fetchone()[0]
+          assert n > 30, n
+          html = pathlib.Path("web/map.html").read_text(encoding="utf-8")
+          assert "Ko'k-neytral" in html
+          print("demo OK:", n, "obyekt")
+          PY

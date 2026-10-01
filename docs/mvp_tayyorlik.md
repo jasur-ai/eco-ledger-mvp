@@ -13,7 +13,7 @@
 |---|---|---|
 | **Ishlaydigan kod** | ✅ | 7 modul: `zoning` · `murojaat` · `adolat` · `notify` · `llm` · `bot` · `api` (`src/`) |
 | **Testlar** | ✅ | **193** — `zoning` 79 · `murojaat` 35 · `adolat` 25 · `bot` 19 · `notify` 17 · `llm` 10 · `api` 8 |
-| **CI (mustaqil klon)** | ✅ | `jasur-ai/eco-ledger-mvp` CI **#16 yashil** (commit `d05ac6a`) |
+| **CI (mustaqil klon)** | ✅ | `jasur-ai/eco-ledger-mvp` CI **#16** (`d05ac6a`) → **#17 yashil** (`cfb4749`, tayyorlik hujjati bilan) |
 | **Jonli proba (bugun)** | ✅ | 7 endpoint **200**: `/v1/health` · `/v1/geo/zones.geojson` · `/v1/export/measurements.csv` · `/v1/adolat/karta/E-1001/html` · `/v1/adolat/hisobot` · `/v1/kpi/sla` · `/v1/bot/summary` |
 | **Ma'lumot qatlami** | ✅ | `data/eco_ledger.db`: **78 obyekt · 73 o'lchov · 8 murojaat · 15 jadval** (audit izi: `events`, `appeal_events`, `audit_log`, `notification_log`) |
 | **Qayta ishlab chiqarish** | ✅ | `make demo` (seed → zona → hisobot → xarita) · `pytest` · `uvicorn src.api.app:app` |

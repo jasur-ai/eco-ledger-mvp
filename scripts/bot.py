@@ -62,6 +62,8 @@ async def start(m: Message):
         "/murojaat — shikoyat yuborish (12 maydon)\n"
         "/kuzatish &lt;kod&gt; — murojaat holati va muddati\n"
         "/sla — ochiq xizmat ko'rsatish paneli\n\n"
+        "🌐 Jonli demo (ikkala loyiha paneli):\n"
+        "https://egaz-audit.pages.dev\n\n"
         "ℹ️ Ko'k-neytral zona «ma'lumot yo'q/tekshirilmagan» degani — «toza» degani emas.",
         parse_mode="HTML")
 

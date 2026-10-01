@@ -61,7 +61,8 @@ async def start(m: Message):
         "/xarita — zonalar ro'yxati va qamrov\n"
         "/murojaat — shikoyat yuborish (12 maydon)\n"
         "/kuzatish &lt;kod&gt; — murojaat holati va muddati\n"
-        "/sla — ochiq xizmat ko'rsatish paneli\n\n"
+        "/sla — ochiq xizmat ko'rsatish paneli\n"
+        "/tushuntirish &lt;eco_id&gt; — nima o'lchandi, nega shunday qaror, qanday e'tiroz (karta)\n\n"
         "🌐 Jonli demo (ikkala loyiha paneli):\n"
         "https://egaz-audit.pages.dev\n\n"
         "ℹ️ Ko'k-neytral zona «ma'lumot yo'q/tekshirilmagan» degani — «toza» degani emas.",
@@ -91,6 +92,31 @@ async def holat(m: Message):
         f"<b>{d['facility']['name']}</b> ({d['facility']['eco_id']})\n"
         f"Rang: <b>{cls.get('zone_class','—')}</b> · R={cls.get('ratio')} · C={cls.get('confidence')}\n"
         f"{reasons}{badge}", parse_mode="HTML")
+
+
+# ---------------- ssenariy 2b: /tushuntirish (adolat paketi, 1C §C.2) ----------------
+@dp.message(Command("tushuntirish"))
+async def tushuntirish(m: Message):
+    parts = (m.text or "").split(maxsplit=1)
+    if len(parts) < 2:
+        await m.answer("Foydalanish: /tushuntirish E-1001")
+        return
+    async with httpx.AsyncClient(timeout=20) as c:
+        r = await c.get(f"{API}/v1/adolat/karta/{parts[1].strip()}")
+    if r.status_code != 200:
+        await m.answer("Obyekt topilmadi (eco_id ni tekshiring).")
+        return
+    d = r.json()
+    t = d["uch_savol"]
+    yoq = [k for k, v in d["kartochka"].items() if v["holat"] == "mavjud emas"]
+    await m.answer(
+        f"📄 <b>Tushuntirish kartasi</b> — {d['eco_id']}\n"
+        f"1️⃣ Nima o'lchandi: {t['nima_olchandi']}\n"
+        f"2️⃣ Nega shunday qaror: {t['nega_shunday_qaror']}\n"
+        f"3️⃣ Qanday e'tiroz: {t['qanday_etiroz']}\n"
+        + (f"\n⚠️ Hozircha to'lmagan maydon: {len(yoq)} ta (noaniqlik U, kalibrovka jurnali — "
+           f"TZ-1 piloti to'ldiradi)." if yoq else ""),
+        parse_mode="HTML")
 
 
 # ---------------- ssenariy 3: /xarita ----------------

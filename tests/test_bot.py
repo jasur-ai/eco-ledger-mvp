@@ -139,6 +139,34 @@ def test_holat_renders_facility():
     assert "JSST etaloni" in t
 
 
+def test_tushuntirish_usage_without_argument():
+    m = FakeMsg("/tushuntirish")
+    run(bot_mod.tushuntirish(m))
+    assert "Foydalanish" in m.sent[0]
+
+
+def test_tushuntirish_renders_three_questions():
+    FakeClient.queue.append(FakeResp(200, {
+        "eco_id": "E-1007",
+        "uch_savol": {"nima_olchandi": "2026-09-25: 217.0 µg/m³ (usul: auto_accredited)",
+                      "nega_shunday_qaror": "R = 217.0/35.0 = 6.20 → Qizil (R ≥ 2,0)",
+                      "qanday_etiroz": "Botdan /murojaat; javob 10 kunda; apellyatsiya — 30 ish kuni"},
+        "kartochka": {"4_noaniqlik_U": {"holat": "mavjud emas"},
+                      "9_koeffitsient": {"holat": "qo'llanilmaydi"}}}))
+    m = FakeMsg("/tushuntirish E-1007")
+    run(bot_mod.tushuntirish(m))
+    t = m.sent[0]
+    assert "Tushuntirish kartasi" in t and "6.20" in t and "30 ish kuni" in t
+    assert "to'lmagan maydon: 1 ta" in t          # faqat «mavjud emas» sanaladi, «qo'llanilmaydi» emas
+
+
+def test_tushuntirish_404_message():
+    FakeClient.queue.append(FakeResp(404, {"detail": "Obyekt topilmadi"}))
+    m = FakeMsg("/tushuntirish E-9999")
+    run(bot_mod.tushuntirish(m))
+    assert "topilmadi" in m.sent[0]
+
+
 def test_holat_404_message():
     FakeClient.queue.append(FakeResp(404, {"detail": "Obyekt topilmadi"}))
     m = FakeMsg("/holat E-9999")

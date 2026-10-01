@@ -10,7 +10,7 @@ import os
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, PlainTextResponse
 
-from .. import config, db
+from .. import adolat, config, db
 from ..llm.generate import generate
 from ..murojaat.service import AppealError, AppealService
 from ..zoning import engine
@@ -94,6 +94,35 @@ def export_csv():
                     r["measured_at"], r["method"], r["n_sources"], r["source_ref"]])
     return PlainTextResponse(buf.getvalue(), media_type="text/csv",
                              headers={"Content-Disposition": "attachment; filename=measurements.csv"})
+
+
+@app.get("/v1/adolat/karta/{eco_id}")
+def adolat_karta(eco_id: str, matn: bool = True):
+    """Tushuntirish kartasi — 1C §C.2, 12 maydon (ma'lumot yo'q maydonlar «mavjud emas» deb ochiq yoziladi)."""
+    conn = get_conn()
+    try:
+        card = adolat.explain_card(conn, eco_id)
+    except ValueError as e:
+        raise HTTPException(404, str(e)) from None
+    if matn:
+        card["etiroz_matni"] = {"uz": adolat.objection_text(card, "uz"),
+                                "ru": adolat.objection_text(card, "ru")}
+    return card
+
+
+@app.get("/v1/adolat/hisobot")
+def adolat_hisobot(chorak: str | None = None):
+    """Choraklik «Aniqlik hisoboti» — 1C §E.2, 5 metrika (hisoblanmaydiganlari sabab bilan)."""
+    return adolat.accuracy_report(get_conn(), quarter=chorak)
+
+
+@app.get("/v1/adolat/oyna")
+def adolat_oyna(qaror_sanasi: str):
+    """Apellyatsiya oynasi: javob muddati (10 kun) va apellyatsiya oxiri (30 ish kuni)."""
+    try:
+        return adolat.appeal_window(qaror_sanasi)
+    except ValueError:
+        raise HTTPException(400, "Sana ISO ko'rinishida bo'lishi kerak (masalan 2026-09-25)") from None
 
 
 @app.get("/v1/facilities/{eco_id}")

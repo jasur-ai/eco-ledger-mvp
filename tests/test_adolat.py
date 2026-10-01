@@ -215,3 +215,33 @@ def test_inspection_result_parser():
     assert adolat._insp_result("natija=Tasdiqlanmadi") == "tasdiqlanmadi"
     assert adolat._insp_result("protokol.pdf") is None
     assert adolat._insp_result(None) is None
+
+
+# ---------- build_card.py CLI: --out semantikasi (R46) ----------
+
+def _bc():
+    import importlib.util, os
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    spec = importlib.util.spec_from_file_location("build_card", os.path.join(root, "scripts", "build_card.py"))
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    return m
+
+
+def test_out_directory_for_many_targets():
+    d, f = _bc().resolve_out_targets("reports/kartalar/", 5)
+    assert d == "reports/kartalar/" and f is None
+
+
+def test_out_file_for_single_target():
+    d, f = _bc().resolve_out_targets("/tmp/bitta.html", 1)
+    assert d is None and f == "/tmp/bitta.html"
+
+
+def test_out_file_with_many_targets_rejected():
+    with pytest.raises(ValueError, match="katalog"):
+        _bc().resolve_out_targets("/tmp/bitta.html", 5)
+
+
+def test_out_empty_default():
+    assert _bc().resolve_out_targets(None, 5) == (None, None)

@@ -154,15 +154,41 @@ def build_pdf(conn, eco_id: str, out_path: str, base_url: str) -> bool:
     return True
 
 
-def build(conn, eco_id: str, fmt: str, out: str | None, base_url: str) -> dict:
+
+def resolve_out_targets(out: str | None, n_targets: int) -> tuple[str | None, str | None]:
+    """--out ni (katalog, fayl) juftligiga aylantiradi.
+
+    Katalog: `…/` bilan tugasa yoki mavjud katalog bo'lsa — bir nechta obyekt uchun.
+    Fayl yo'li: faqat bitta obyekt uchun; bir nechta obyekt bilan ValueError.
+    """
+    if not out:
+        return None, None
+    if out.endswith("/") or os.path.isdir(out):
+        return out, None
+    if n_targets > 1:
+        raise ValueError("--out fayl yo'li faqat bitta obyekt uchun — bir nechta obyekt uchun "
+                         "katalog bering: --out reports/kartalar/")
+    return None, out
+
+def build(conn, eco_id: str, fmt: str, out: str | None, base_url: str,
+          out_dir: str | None = None) -> dict:
+    """out — bitta obyekt uchun aniq fayl yo'li; out_dir — bir nechta obyekt uchun katalog."""
     res = {"eco_id": eco_id, "yozildi": []}
+
+    def _p(ext: str) -> str:
+        if out_dir:
+            return os.path.join(out_dir, f"karta_{eco_id}.{ext}")
+        if out and out.endswith("." + ext):
+            return out
+        return os.path.join(OUTDIR_DEFAULT, f"karta_{eco_id}.{ext}")
+
     if fmt in ("html", "both"):
-        p = out or os.path.join(OUTDIR_DEFAULT, f"karta_{eco_id}.html")
+        p = _p("html")
         os.makedirs(os.path.dirname(p) or ".", exist_ok=True)
         open(p, "w", encoding="utf-8").write(adolat.card_html(conn, eco_id, base_url=base_url))
         res["yozildi"].append(p)
     if fmt in ("pdf", "both"):
-        p = (out if out and out.endswith(".pdf") else None) or os.path.join(OUTDIR_DEFAULT, f"karta_{eco_id}.pdf")
+        p = _p("pdf")
         ok = build_pdf(conn, eco_id, p, base_url)
         if ok:
             res["yozildi"].append(p)
@@ -174,9 +200,9 @@ def build(conn, eco_id: str, fmt: str, out: str | None, base_url: str) -> dict:
 def main() -> int:
     ap = argparse.ArgumentParser(description="Tushuntirish kartasi (HTML/PDF)")
     ap.add_argument("--eco", help="obyekt kodi (masalan E-1001)")
-    ap.add_argument("--all", action="store_true", help="birinchi 5 qizil zonadagi obyekt")
+    ap.add_argument("--all", action="store_true", help="qizil zonadagi birinchi 5 obyekt")
     ap.add_argument("--format", choices=["html", "pdf", "both"], default="both")
-    ap.add_argument("--out", help="aniq fayl yo'li (bitta obyekt uchun)")
+    ap.add_argument("--out", help='fayl yo\'li (bitta obyekt) yoki katalog: "kartalar/" (bir nechta obyekt)')
     ap.add_argument("--base-url", default=os.environ.get("ECO_BASE_URL", "https://egaz-audit.pages.dev"))
     args = ap.parse_args()
 
@@ -191,10 +217,18 @@ def main() -> int:
         print("--eco yoki --all kerak (--help)")
         return 1
 
+    # --out: katalog (…/) yoki bitta obyekt uchun fayl
+    try:
+        out_dir, out_file = resolve_out_targets(args.out, len(targets))
+    except ValueError as e:
+        print(f"❌ {e}")
+        return 1
+
     rc = 0
     for eco in targets:
         try:
-            res = build(conn, eco, args.format, args.out if len(targets) == 1 else None, args.base_url)
+            res = build(conn, eco, args.format,
+                        out_file if len(targets) == 1 else None, args.base_url, out_dir)
         except ValueError as e:
             print(f"❌ {eco}: {e}")
             rc = 1

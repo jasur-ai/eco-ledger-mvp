@@ -11,7 +11,7 @@
 cd MVP
 make install                            # fastapi, uvicorn, pytest (+httpx)
 make demo                               # DB seed + zona hisobi + hisobot + xarita
-make test                               # 189 test
+make test                               # 125 test
 make serve                              # API (docs: /docs) — / da xarita
 make bot                                # jonli bot (token: .secrets/minds_keys.env)
 bash scripts/bot_healthcheck.sh         # 4 nuqtali salomatlik tekshiruvi

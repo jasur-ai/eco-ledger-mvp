@@ -40,7 +40,7 @@
 ```bash
 make install   # pip install -r requirements.txt
 make demo      # seed + hisob + hisobot + xarita
-make test      # pytest -q tests/  (189 test)
+make test      # pytest -q tests/  (193 test)
 make serve     # uvicorn src.api.app:app --port 8000  →  / da xarita
 make bot       # ECO_BOT_TOKEN kerak (docs/BOT-INTEGRATSIYA.md)
 make docker    # docker compose up --build (api + bot profili)

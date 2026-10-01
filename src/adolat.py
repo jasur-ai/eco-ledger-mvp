@@ -152,6 +152,15 @@ def explain_card(conn, eco_id: str) -> dict:
     }
 
 
+def _insp_result(evidence: str | None) -> str | None:
+    """`evidence` matnidan `natija=<qiymat>` ni ajratadi (8-holat yozuvi)."""
+    for part in (evidence or "").split(";"):
+        part = part.strip()
+        if part.startswith("natija="):
+            return part.split("=", 1)[1].strip().lower()
+    return None
+
+
 def _has(conn, table: str) -> bool:
     return _one(conn, "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (table,)) is not None
 
@@ -164,6 +173,115 @@ def _human_review(conn, eco_id: str) -> str | None:
     if not row:
         return None
     return f"oxirgi harakat: {row[2]} · kim: {row[0]} · {row[1]}"
+
+
+# ------------------------------------------------------------------ 1b) chop etiladigan karta
+
+HOLAT_BELGI = {"bor": "✅", "qisman": "🟡", "mavjud emas": "⚪", "qo'llanilmaydi": "➖"}
+
+
+def qr_svg(data: str, scale: int = 2, border: int = 1) -> str | None:
+    """QR kod (SVG, tashqi resurs yo'q). `segno` bo'lmasa — None (karta QR'siz chiqadi)."""
+    try:
+        import segno
+    except Exception:
+        return None
+    q = segno.make(data, error="m")
+    return q.svg_inline(scale=scale, border=border, dark="#111", light="#fff")
+
+
+def card_html(conn, eco_id: str, base_url: str = "https://egaz-audit.pages.dev",
+              lang: str = "uz") -> str:
+    """Bir varaqli chop etiladigan karta (A4) — 1C §C.2: uz lotin (asosiy) + ruscha e'tiroz matni."""
+    card = explain_card(conn, eco_id)
+    t = card["uch_savol"]
+    url = f"{base_url}/v1/adolat/karta/{eco_id}"
+    qr = qr_svg(url)
+
+    rows = []
+    for key, v in card["kartochka"].items():
+        nomi = key.split("_", 1)[1].replace("_", " ")
+        qiymat = v["qiymat"] if v["qiymat"] else ("—" if v["holat"] != "mavjud emas" else "ko'rsatilmagan")
+        sabab = f'<div class="sabab">{v["sabab"]}</div>' if v.get("sabab") else ""
+        sabablar = ""
+        if v.get("sabablar"):
+            sabablar = "<ul>" + "".join(f"<li>{x}</li>" for x in v["sabablar"]) + "</ul>"
+        rows.append(
+            f'<tr><td class="no">{key.split("_")[0]}</td>'
+            f'<td><b>{nomi}</b><div class="q">{qiymat}</div>{sabablar}{sabab}</td>'
+            f'<td class="manba">{v["manba"]}</td>'
+            f'<td class="holat">{HOLAT_BELGI.get(v["holat"], "")} {v["holat"]}</td></tr>')
+
+    return f"""<!DOCTYPE html>
+<html lang="{lang}"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tushuntirish kartasi — {eco_id}</title>
+<style>
+  @page {{ size: A4; margin: 12mm; }}
+  body {{ font: 12.5px/1.5 -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: #111; margin: 0; }}
+  .wrap {{ max-width: 190mm; margin: 0 auto; padding: 10px 14px 24px; }}
+  header {{ border-bottom: 2px solid #111; padding-bottom: 8px; margin-bottom: 12px; }}
+  h1 {{ font-size: 17px; margin: 0 0 4px; }}
+  .sub {{ font-size: 11.5px; color: #555; }}
+  .top {{ display: flex; gap: 14px; align-items: flex-start; }}
+  .savol {{ background: #f4f7fa; border-left: 4px solid #2f81f7; padding: 9px 11px; margin: 10px 0 12px; }}
+  .savol div {{ margin: 2px 0; }}
+  table {{ width: 100%; border-collapse: collapse; font-size: 11.5px; }}
+  td, th {{ border-bottom: 1px solid #ccc; padding: 5px 6px; vertical-align: top; text-align: left; }}
+  th {{ background: #f0f0f0; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; }}
+  .no {{ width: 22px; text-align: center; font-weight: 700; color: #555; }}
+  .manba {{ width: 33%; color: #555; font-size: 10.5px; }}
+  .holat {{ width: 96px; font-size: 10.5px; white-space: nowrap; }}
+  .q {{ font-weight: 600; }}
+  .sabab {{ color: #8a4b00; font-size: 10.5px; margin-top: 3px; }}
+  ul {{ margin: 4px 0 0 16px; padding: 0; color: #333; }}
+  .qr {{ text-align: center; font-size: 10px; color: #555; }}
+  .qr svg {{ width: 96px; height: 96px; }}
+  .etiroz {{ border: 1px solid #bbb; border-radius: 8px; padding: 9px 11px; margin-top: 10px;
+             white-space: pre-line; font-size: 11px; background: #fafafa; }}
+  .imzo {{ margin-top: 14px; display: flex; justify-content: space-between; font-size: 11px; }}
+  .imzo div {{ border-top: 1px solid #888; width: 30%; padding-top: 4px; }}
+  footer {{ margin-top: 12px; font-size: 10px; color: #666; border-top: 1px solid #ddd; padding-top: 6px; }}
+  @media print {{ .wrap {{ padding: 0 }} }}
+</style></head><body><div class="wrap">
+<header>
+  <div class="top">
+    <div style="flex:1">
+      <h1>Tushuntirish kartasi — bitta qarorning pasporti</h1>
+      <div class="sub">Obyekt: <b>{eco_id}</b> · sana: {card['sana']} · manba: Ochiq-Eko-Ledger ochiq reyestri ·
+        karta 12 majburiy maydondan iborat (1C §C.2)</div>
+    </div>
+    <div class="qr">{qr or ''}<div>QR: xom ma'lumot va API</div></div>
+  </div>
+</header>
+
+<div class="savol">
+  <div><b>1) Nima o'lchandi:</b> {t['nima_olchandi']}</div>
+  <div><b>2) Nega shunday qaror chiqdi:</b> {t['nega_shunday_qaror']}</div>
+  <div><b>3) Qanday e'tiroz bildiraman:</b> {t['qanday_etiroz']}</div>
+</div>
+
+<table>
+  <thead><tr><th></th><th>Maydon</th><th>Manba</th><th>Holat</th></tr></thead>
+  <tbody>{''.join(rows)}</tbody>
+</table>
+
+<div class="etiroz">{objection_text(card, 'uz')}
+
+{objection_text(card, 'ru')}</div>
+
+<div class="imzo">
+  <div>Obyekt / korxona vakili</div>
+  <div>Tekshiruvchi (kim, qachon)</div>
+  <div>Sana, imzo</div>
+</div>
+
+<footer>
+  Karta avtomatik yaratildi: <code>{url}</code> · to'lgan maydonlar: {card['tolgan_maydonlar']}/12 ·
+  yetmaganlari sababi bilan ko'rsatilgan (yashirilmaydi) · yozuvlar o'chirilmaydi (append-only):
+  xato tasdiqlansa — tuzatish qo'shiladi.
+</footer>
+</div></body></html>"""
 
 
 # ------------------------------------------------------------------ 2) apellyatsiya matni
@@ -219,10 +337,30 @@ def accuracy_report(conn, quarter: str | None = None) -> dict:
           "qiymat": (round(len(yellow) / signals, 4) if signals else None),
           "manba": "sariq / (qizil + sariq) — o'lchov noaniqligining pul oqimiga ta'siri"}
 
-    m3 = {"nomi": "Tasdiqlangan qizil signallar (precision)", "qiymat": None, "holat": "mavjud emas",
-          "manba": "inspeksiya natijalari (qarorni tasdiqlash) kerak",
-          "sabab": "Platformada inspeksiya yakuni maydoni yo'q — bu ko'rsatkich nazorat organi "
-                   "ma'lumoti ulanganda hisoblanadi (1C §E.2 qoidasi: 1 va 3 juftlikda e'lon qilinadi)."}
+    # 3-metrika: inspeksiya yakunlari (R41 — 8-holat `yakunlandi_tekshiruv`).
+    # Manba: appeal_events.evidence ichidagi `natija=tasdiqlandi|qisman|tasdiqlanmadi`.
+    insp = {"tasdiqlandi": 0, "qisman": 0, "tasdiqlanmadi": 0}
+    if _has(conn, "appeal_events"):
+        for (ev,) in conn.execute("SELECT evidence FROM appeal_events WHERE to_status='yakunlandi_tekshiruv'"):
+            nat = _insp_result(ev)
+            if nat in insp:
+                insp[nat] += 1
+    n_insp = sum(insp.values())
+    if n_insp:
+        # precision: tasdiqlangan / (tasdiqlangan + tasdiqlanmagan) — qisman sanalmaydi, ochiq ko'rsatiladi
+        denom = insp["tasdiqlandi"] + insp["tasdiqlanmadi"]
+        m3 = {"nomi": "Tasdiqlangan qizil signallar (precision)", "holat": "bor",
+              "qiymat": (round(insp["tasdiqlandi"] / denom, 4) if denom else None),
+              "manba": f"appeal_events (8-holat): tasdiqlandi {insp['tasdiqlandi']} · qisman {insp['qisman']} · "
+                       f"tasdiqlanmadi {insp['tasdiqlanmadi']}",
+              "izoh": "Qisman tasdiqlangan holatlar maxrajga kirmaydi (ochiq alohida ko'rsatiladi). "
+                      "Oyna kichik bo'lsa, foiz barqaror emas — n bilan birga o'qilsin."}
+    else:
+        m3 = {"nomi": "Tasdiqlangan qizil signallar (precision)", "qiymat": None, "holat": "mavjud emas",
+              "manba": "inspeksiya yakunlari kerak (8-holat: `yakunlandi_tekshiruv`)",
+              "sabab": "Hozircha inspeksiya yakuni kiritilmagan. Modal tayyor: apellyatsiya/tekshiruv "
+                       "jarayonida `yakunlandi_tekshiruv` holatiga o'tish bilan `natija=` yoziladi — "
+                       "shundan keyin bu ko'rsatkich avtomatik hisoblanadi (1C §E.2: 1 va 3 juftlikda)."}
 
     # 4-metric: apellyatsiya ta'siri (qaror o'zgargan holatlar)
     changed = 0

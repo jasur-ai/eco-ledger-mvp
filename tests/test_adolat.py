@@ -149,3 +149,69 @@ def test_api_oyna_endpoint(client):
 
 def test_api_karta_404(client):
     assert client.get("/v1/adolat/karta/E-9999").status_code == 404
+
+
+# ------------------------------------------------------------------ chop etiladigan karta (R41)
+
+def test_card_html_has_required_parts(conn):
+    html = adolat.card_html(conn, "E-1001")
+    assert html.startswith("<!DOCTYPE html>") and "A4" in html
+    for i in range(1, 13):                                  # 12 maydon raqami ko'rinadi
+        assert f">{i}</td>" in html
+    assert "Nima o'lchandi" in html and "Nega shunday qaror" in html and "Qanday e'tiroz" in html
+    assert "ОБЖАЛОВАНИЕ" in html                            # ruscha matn ham bor
+    assert "<svg" in html                                   # QR kod ichida (tashqi resurs yo'q)
+    assert "append-only" in html
+
+
+def test_card_html_no_external_resources(conn):
+    html = adolat.card_html(conn, "E-1001")
+    # tashqi <script>/<link>/<img src> bo'lmasligi kerak (faqat inline SVG QR)
+    assert "<script" not in html and "<link" not in html
+    assert 'src="http' not in html
+
+
+def test_card_pdf_is_single_page(conn, tmp_path):
+    fpdf = pytest.importorskip("fpdf")                        # muhitda bo'lmasa — o'tkazib yuboriladi
+    import re
+    import sys as _sys
+    _sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
+    import build_card as bc
+    out = str(tmp_path / "karta.pdf")
+    assert bc.build_pdf(conn, "E-1001", out, "https://egaz-audit.pages.dev") is True
+    data = open(out, "rb").read()
+    assert len(data) > 10_000
+    assert len(re.findall(rb"/Type\s*/Page[^s]", data)) == 1, "1C talabi: karta bir varaq"
+
+
+def test_precision_metric_uses_inspection_state(conn, tmp_path):
+    """8-holat (`yakunlandi_tekshiruv`) kiritilsa — 3-metrika «bor» bo'ladi va to'g'ri sanaydi."""
+    from src.murojaat.service import AppealService
+    import sqlite3 as _s
+    db2 = str(tmp_path / "insp.db")
+    c2 = db.connect(db2)
+    from src.seed import seed, seed_appeals
+    seed(c2)
+    codes, _ = seed_appeals(c2)
+    svc = AppealService(c2)
+
+    before = [m for m in adolat.accuracy_report(c2)["metrikalar"] if m["nomi"].startswith("Tasdiqlangan")][0]
+    assert before["holat"] == "mavjud emas" and before["qiymat"] is None
+
+    # javob_berildi holatidagi murojaatni topib, tekshiruv yakunini yozamiz
+    row = c2.execute("SELECT public_code FROM appeals WHERE status='javob_berildi'").fetchone()
+    code = row["public_code"] if hasattr(row, "keys") else row[0]
+    svc.transition(code, "yakunlandi_tekshiruv", "inspector",
+                   evidence="protokol-12.pdf; natija=tasdiqlandi")
+
+    after = [m for m in adolat.accuracy_report(c2)["metrikalar"] if m["nomi"].startswith("Tasdiqlangan")][0]
+    assert after["holat"] == "bor" and after["qiymat"] == 1.0
+    assert "tasdiqlandi 1" in after["manba"]
+    c2.close()
+
+
+def test_inspection_result_parser():
+    assert adolat._insp_result("protokol.pdf; natija=qisman") == "qisman"
+    assert adolat._insp_result("natija=Tasdiqlanmadi") == "tasdiqlanmadi"
+    assert adolat._insp_result("protokol.pdf") is None
+    assert adolat._insp_result(None) is None

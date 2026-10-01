@@ -8,7 +8,7 @@ import json
 import os
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse, PlainTextResponse
+from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse
 
 from .. import adolat, config, db
 from ..llm.generate import generate
@@ -108,6 +108,16 @@ def adolat_karta(eco_id: str, matn: bool = True):
         card["etiroz_matni"] = {"uz": adolat.objection_text(card, "uz"),
                                 "ru": adolat.objection_text(card, "ru")}
     return card
+
+
+@app.get("/v1/adolat/karta/{eco_id}/html", response_class=HTMLResponse)
+def adolat_karta_html(eco_id: str):
+    """Chop etiladigan karta (A4, QR bilan) — brauzerda ochib PDF qilib saqlash mumkin."""
+    conn = get_conn()
+    try:
+        return HTMLResponse(adolat.card_html(conn, eco_id))
+    except ValueError as e:
+        raise HTTPException(404, str(e)) from None
 
 
 @app.get("/v1/adolat/hisobot")

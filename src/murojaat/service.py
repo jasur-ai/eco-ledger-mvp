@@ -25,7 +25,8 @@ from .. import config
 from ..db import add_event, audit
 
 STATUSES = ("yuborildi", "ko'rib_chiqilmoqda", "tashkilotga_yuborildi",
-            "javob_berildi", "hal_qilindi", "rad_etildi", "apellyatsiya")
+            "javob_berildi", "hal_qilindi", "rad_etildi", "apellyatsiya",
+            "yakunlandi_tekshiruv")   # 8-holat (R41, TZ-2 §6 ga taklif): inspeksiya yakuni
 
 # Ruxsat etilgan o'tishlar: (from, to) -> ruxsat etilgan actorlar to'plami
 TRANSITIONS = {
@@ -38,8 +39,16 @@ TRANSITIONS = {
     ("apellyatsiya", "ko'rib_chiqilmoqda"): {"system", "operator"},
     ("ko'rib_chiqilmoqda", "javob_berildi"): {"operator"},   # apellyatsiyadan keyingi yakun
     ("tashkilotga_yuborildi", "hal_qilindi"): {"operator"},  # tezkor hal (dalil bilan)
+    # 8-holat (R41): javobdan keyin mustaqil tekshiruv yakuni — 1C §E.2 ning 3-metrikasi
+    # (tasdiqlangan signallar / precision) shu yozuvlardan oziqlanadi.
+    ("javob_berildi", "yakunlandi_tekshiruv"): {"inspector"},
+    ("yakunlandi_tekshiruv", "hal_qilindi"): {"operator"},     # tasdiqlandi → hal
+    ("yakunlandi_tekshiruv", "rad_etildi"): {"operator"},      # tasdiqlanmadi → rad
 }
 FINAL = {"hal_qilindi"}
+
+# Tekshiruv yakunlari (evidence maydonida saqlanadi: "natija=<qiymat>; ...")
+INSPECTION_RESULTS = ("tasdiqlandi", "qisman", "tasdiqlanmadi")
 
 CATEGORIES = ("air", "water", "waste", "noise", "odor", "soil", "other")
 TYPES = ("T1", "T2", "T3", "T4", "T5")
@@ -205,6 +214,20 @@ class AppealService:
             raise AppealError("Rad etishda sabab MAJBURIY yoziladi")
         if to_status == "hal_qilindi" and not evidence:
             raise AppealError("Hal qilishda tasdiq (o'lchov/foto) MAJBURIY")
+        # 8-holat (R41): inspeksiya yakunida natija MAJBURIY va ro'yxatdan bo'lishi kerak
+        if to_status == "yakunlandi_tekshiruv":
+            if not evidence:
+                raise AppealError("Tekshiruv yakunida dalil MAJBURIY (protokol/foto havolasi)")
+            if f"natija=" not in (evidence or ""):
+                raise AppealError("Tekshiruv yakunida natija ko'rsatilishi shart: "
+                                  "evidence ichida `natija=` + qiymat (" + ", ".join(INSPECTION_RESULTS) + ")")
+            natija = ""
+            for part in (evidence or "").split(";"):
+                part = part.strip()
+                if part.startswith("natija="):
+                    natija = part.split("=", 1)[1].strip().lower()
+            if natija not in INSPECTION_RESULTS:
+                raise AppealError(f"Tekshiruv natijasi noto'g'ri: «{natija}» (ruxsat: {', '.join(INSPECTION_RESULTS)})")
         now = now or _now()
         first_response = r["first_response_at"]
         if to_status == "javob_berildi" and not first_response:

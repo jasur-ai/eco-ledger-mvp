@@ -230,3 +230,67 @@ def test_sla_metrics_compliance(svc):
     svc.transition(a["public_code"], "javob_berildi", "operator", now=MON + timedelta(days=2))
     rep = svc.sla_report(now=MON + timedelta(days=3))
     assert rep["compliance_pct"] == 100.0 and rep["answered"] == 1
+
+
+# ---------- 8-holat: inspeksiya yakuni (R41, TZ-2 §6 ga taklif) ----------
+
+def _to_javob(svc):
+    c = _mk(svc)["public_code"]
+    svc.transition(c, "ko'rib_chiqilmoqda", "operator", now=MON + timedelta(hours=2))
+    svc.transition(c, "tashkilotga_yuborildi", "operator", now=MON + timedelta(days=1))
+    svc.transition(c, "javob_berildi", "operator", now=MON + timedelta(days=3))
+    return c
+
+
+def test_inspection_requires_evidence(svc):
+    c = _to_javob(svc)
+    with pytest.raises(AppealError, match="dalil"):
+        svc.transition(c, "yakunlandi_tekshiruv", "inspector", now=MON + timedelta(days=5))
+
+
+def test_inspection_requires_natija_field(svc):
+    c = _to_javob(svc)
+    with pytest.raises(AppealError, match="natija"):
+        svc.transition(c, "yakunlandi_tekshiruv", "inspector",
+                       evidence="protokol-12.pdf", now=MON + timedelta(days=5))
+
+
+def test_inspection_bad_result_value_rejected(svc):
+    c = _to_javob(svc)
+    with pytest.raises(AppealError, match="noto'g'ri"):
+        svc.transition(c, "yakunlandi_tekshiruv", "inspector",
+                       evidence="protokol.pdf; natija=bilmadim", now=MON + timedelta(days=5))
+
+
+def test_inspection_only_inspector_can_close(svc):
+    c = _to_javob(svc)
+    with pytest.raises(AppealError, match="Aktor"):
+        svc.transition(c, "yakunlandi_tekshiruv", "operator",
+                       evidence="protokol.pdf; natija=tasdiqlandi", now=MON + timedelta(days=5))
+
+
+def test_inspection_confirmed_leads_to_resolved(svc):
+    c = _to_javob(svc)
+    r = svc.transition(c, "yakunlandi_tekshiruv", "inspector",
+                       evidence="protokol.pdf; natija=tasdiqlandi", now=MON + timedelta(days=5))
+    assert r["status"] == "yakunlandi_tekshiruv"
+    r2 = svc.transition(c, "hal_qilindi", "operator", evidence="o'lchov.pdf", now=MON + timedelta(days=6))
+    assert r2["status"] == "hal_qilindi"
+
+
+def test_inspection_refuted_leads_to_rejected(svc):
+    c = _to_javob(svc)
+    svc.transition(c, "yakunlandi_tekshiruv", "inspector",
+                   evidence="protokol.pdf; natija=tasdiqlanmadi", now=MON + timedelta(days=5))
+    r = svc.transition(c, "rad_etildi", "operator", comment="Qayta o'lchovda normadan oshiq topilmadi",
+                       now=MON + timedelta(days=6))
+    assert r["status"] == "rad_etildi"
+
+
+def test_inspection_event_written_to_log(svc):
+    c = _to_javob(svc)
+    svc.transition(c, "yakunlandi_tekshiruv", "inspector",
+                   evidence="protokol.pdf; natija=qisman", now=MON + timedelta(days=5))
+    ev = [dict(r) for r in svc.conn.execute(
+        "SELECT * FROM appeal_events WHERE to_status='yakunlandi_tekshiruv'").fetchall()]
+    assert len(ev) == 1 and ev[0]["actor"] == "inspector" and "natija=qisman" in ev[0]["evidence"]

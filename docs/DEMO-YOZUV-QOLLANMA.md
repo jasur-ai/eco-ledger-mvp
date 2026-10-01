@@ -135,6 +135,20 @@ ovozni davom ettirish mumkin (ranglar bir xil).
 
 ## 5. Yozib olish (ffmpeg yoki OBS)
 
+### Variant 0 — bir buyruq bilan (avtomatik, tavsiya etiladi)
+
+```bash
+bash scripts/record_all.sh --list         # ssenariylar va vaqtlar
+bash scripts/record_all.sh --dry-run      # ffmpeg buyruqlari (yozmasdan ko'rish)
+bash scripts/record_all.sh --demo model   # bitta video (subtitr kuydiriladi)
+bash scripts/record_all.sh --all          # 4 tasi ketma-ket → YAKUNIY/video/live-<nom>.mp4
+```
+
+Sozlamalar bir joyda: `REC_SIZE` (1920x1080) · `REC_FPS` (30) · `REC_CRF` (20) · `REC_DISPLAY` (:0) —
+skript boshidagi izohga qarang. Subtitr: `--subs burn|soft|none`.
+**Talab:** ffmpeg + X11 · oldin `bash scripts/record_preflight.sh` (18 tekshiruv) ishga tushirilsin.
+ⓘ Ovoz (mikrofon) avtomatik qo'shilmaydi — 4-video uchun ovozni qo'lda yozib, `ffmpeg -i live-<nom>.mp4 -i ovoz.wav -c:v copy -c:a aac …` bilan birlashtiring (yoki OBS'dan foydalaning, Variant B).
+
 ### Variant A — ffmpeg (Linux/X11)
 
 ```bash

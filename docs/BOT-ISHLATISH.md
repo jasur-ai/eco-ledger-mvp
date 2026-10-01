@@ -79,4 +79,4 @@ Tamoyillar (professional):
 - `getMe` → @ecoledg_bot ✅ · `setMyCommands` → 7 buyruq ✅ · `setMyDescription` ✅
 - Bot jarayoni ishga tushdi: `Bot ishga tushdi: @ecoledg_bot · API: http://127.0.0.1:8000` ✅
 - API javoblari: `/v1/health` → 78 obyekt · `/v1/geo/zones.geojson` → 6 zona ✅
-- `pytest -q tests/` → **158 test** (16 bot handleri + 17 push-eslatma testi bilan) ✅
+- `pytest -q tests/` → **189 test** (adolat 21 + murojaat 35 + bot 16 + push-eslatma 17 + qolgan 100) ✅

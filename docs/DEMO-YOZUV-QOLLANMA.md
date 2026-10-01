@@ -72,7 +72,7 @@ oyna 1920×1080, terminal to'liq ekranda (yoki o'ng 2/3 — brauzer bilan yonma-
 | 7 | 1:55–2:10 | Terminal | `bash scripts/bot_healthcheck.sh` | `NATIJA: ✅ hammasi joyida` (4 nuqta) | «Yakuniy dalil: to'rt nuqtali salomatlik tekshiruvi — hammasi joyida.» |
 
 > **Raqamlar izohi (yozuvdan oldin o'qib chiqing):** 78 obyekt · 6 tuman · 4 rang ·
-> Olmazor 46% · 158 test. Bu sonlar `run_demo.py` va `zones` chiqishida **ko'rinadi** —
+> Olmazor 46% · 189 test. Bu sonlar `run_demo.py` va `zones` chiqishida **ko'rinadi** —
 > aytilgan son ekranda bo'lishi shart.
 
 **Zaxira kadr:** brauzer ochilmasa — `YAKUNIY/video/demo-xarita.gif` ni 3-sahna uchun ko'rsatib,

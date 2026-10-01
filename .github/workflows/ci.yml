@@ -14,7 +14,7 @@ jobs:
           python-version: "3.12"
       - name: Bog'liqliklar
         run: pip install -r requirements.txt
-      - name: Testlar (189 ta)
+      - name: Testlar (193 ta)
         run: pytest -q tests/
       - name: Demo smoke
         run: |

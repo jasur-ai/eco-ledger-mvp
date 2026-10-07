@@ -12,6 +12,8 @@ yashirilmaydi: bu 1C ning asosiy talabi).
 """
 from __future__ import annotations
 
+import json
+import re
 from datetime import date, datetime, timedelta
 from typing import Any
 
@@ -57,9 +59,6 @@ def explain_card(conn, eco_id: str) -> dict:
                              "WHERE eco_id=? ORDER BY created_at DESC LIMIT 1", (eco_id,)) \
         if _has(conn, "appeals") else None
 
-    zone_names = {"red": "Qizil (R ≥ 2,0)", "yellow": "Sariq (1,0 < R < 2,0)",
-                  "green": "Yashil (R ≤ 1,0, C ≥ 0,5)", "blue": "Ko'k-neytral (ma'lumot yetarli emas)"}
-
     kartochka: dict[str, dict] = {
         "1_obyekt_va_manba": {
             "qiymat": f"{f[1]} ({f[0]}) · zonalar: {f[2]} · sektor: {f[5]} · "
@@ -91,7 +90,7 @@ def explain_card(conn, eco_id: str) -> dict:
             "holat": "bor" if norm else "mavjud emas",
         },
         "6_qaror_qoidasi": {
-            "qiymat": (f"zona: {zone_names.get(cls[3], cls[3])} · R={cls[1]:.2f} · C={cls[2]:.2f} · "
+            "qiymat": (f"zona: {qoida_matni(cls[3], sabablar_royxati(cls[6]))} · R={cls[1]:.2f} · C={cls[2]:.2f} · "
                        f"severity={cls[4]} · qoida versiyasi {cls[5]}" if cls else None),
             "manba": "TZ §5.1–5.4 (R = qiymat/norma; C — ishonch; override qoidalari)",
             "holat": "bor" if cls else "mavjud emas",
@@ -144,7 +143,8 @@ def explain_card(conn, eco_id: str) -> dict:
         "tolgan_maydonlar": sum(1 for v in kartochka.values() if v["holat"] == "bor"),
         "uch_savol": {
             "nima_olchandi": (f"{m[2]}: {m[1]} {norm[1] if norm else ''} (usul: {m[3]})" if m else "ma'lumot yo'q"),
-            "nega_shunday_qaror": (f"R = {m[1]}/{norm[0] if norm else '?'} = {cls[1]:.2f} → {zone_names.get(cls[3], cls[3])}"
+            "nega_shunday_qaror": (f"R = {m[1]}/{norm[0] if norm else '?'} = {cls[1]:.2f} → "
+                                   f"{qoida_matni(cls[3], sabablar_royxati(cls[6]))}"
                                    if (m and norm and cls) else "hisob uchun ma'lumot yetarli emas"),
             "qanday_etiroz": (f"Botdan /murojaat yoki sayt formasi orqali; javob {JAVOB_KUN} kunda; "
                               f"apellyatsiya — {APELLYATSIYA_ISH_KUNI} ish kuni ichida"),
@@ -205,7 +205,9 @@ def card_html(conn, eco_id: str, base_url: str = "https://egaz-audit.pages.dev",
         sabab = f'<div class="sabab">{v["sabab"]}</div>' if v.get("sabab") else ""
         sabablar = ""
         if v.get("sabablar"):
-            sabablar = "<ul>" + "".join(f"<li>{x}</li>" for x in v["sabablar"]) + "</ul>"
+            royxat = sabablar_royxati(v["sabablar"])
+            if royxat:
+                sabablar = "<ul>" + "".join(f"<li>{x}</li>" for x in royxat) + "</ul>"
         rows.append(
             f'<tr><td class="no">{key.split("_")[0]}</td>'
             f'<td><b>{nomi}</b><div class="q">{qiymat}</div>{sabablar}{sabab}</td>'
@@ -282,6 +284,48 @@ def card_html(conn, eco_id: str, base_url: str = "https://egaz-audit.pages.dev",
   xato tasdiqlansa — tuzatish qo'shiladi.
 </footer>
 </div></body></html>"""
+
+
+# ------------------------------------------------------------------ qaror qoidasi matni
+
+ZONA_ASOSIY = {"red": "Qizil (R ≥ 2,0)", "yellow": "Sariq (1,0 < R < 2,0)",
+               "green": "Yashil (R ≤ 1,0, C ≥ 0,5)", "blue": "Ko'k-neytral (ma'lumot yetarli emas)"}
+
+
+def sabablar_royxati(x) -> list[str]:
+    """DB'dagi `reasons` maydoni (JSON matn yoki ro'yxat) → matnlar ro'yxati.
+
+    Ilgari bu qiymat satr sifatida aylanib, HTML'da <li> ichida harfma-harf
+    chiqib qolardi (R58 tuzatishi).
+    """
+    if not x:
+        return []
+    if isinstance(x, (list, tuple)):
+        return [str(i) for i in x]
+    try:
+        d = json.loads(x)
+    except Exception:
+        return [str(x)]
+    return [str(i) for i in d] if isinstance(d, list) else [str(d)]
+
+
+def qoida_matni(zone: str, sabablar: list[str]) -> str:
+    """Zona nomi + ASLIDA qo'llanilgan qoida.
+
+    Muammo (R58 tuzatishi): «Qizil (R ≥ 2,0)» yozuvi override (O1/O2/O3) bilan
+    ko'tarilgan holatlarda ham chiqarilar edi — R=1,40 bo'lsa bu ziddiyat.
+    Endi override qo'llanilgan bo'lsa, aynan o'sha qoida ko'rsatiladi.
+    """
+    asosiy = ZONA_ASOSIY.get(zone, zone)
+    override = None
+    for sabab in sabablar:
+        m = re.match(r"^\s*(O\d)\s*:", str(sabab))
+        if m and "pog'ona" in str(sabab):
+            override = str(sabab).strip()
+            break
+    if override:
+        return f"{asosiy.split(' (')[0]} (qo'llanilgan qoida: {override})"
+    return asosiy
 
 
 # ------------------------------------------------------------------ 2) apellyatsiya matni

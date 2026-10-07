@@ -10,6 +10,8 @@ if os.path.exists(ADS_DB):
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import re
+
 import pytest                                            # noqa: E402
 from src import adolat, config, db                       # noqa: E402
 from src.seed import seed                                # noqa: E402
@@ -162,6 +164,17 @@ def test_card_html_has_required_parts(conn):
     assert "ОБЖАЛОВАНИЕ" in html                            # ruscha matn ham bor
     assert "<svg" in html                                   # QR kod ichida (tashqi resurs yo'q)
     assert "append-only" in html
+    # R58: sabablar ro'yxati harfma-harf chiqmasligi shart (har <li> — to'liq jumla)
+    li = re.findall(r"<li>(.*?)</li>", html)
+    assert li, "qaror sabablari ro'yxati yo'q"
+    assert all(len(x) > 5 for x in li), f"harfma-harf chiqish: {li[:6]}"
+    # R58: qaror izohi qo'llanilgan qoidaga mos bo'lishi shart (override bo'lsa — override)
+    card = adolat.explain_card(conn, "E-1001")
+    nega = card["uch_savol"]["nega_shunday_qaror"]
+    if card["kartochka"]["6_qaror_qoidasi"]["qiymat"].startswith("zona: Qizil") and "R=" in nega:
+        r_qiymat = float(nega.split("R = ")[1].split(" = ")[1].split(" →")[0])
+        if r_qiymat < 2.0:
+            assert "qo'llanilgan qoida" in nega, f"ziddiyatli izoh: {nega}"
 
 
 def test_card_html_no_external_resources(conn):

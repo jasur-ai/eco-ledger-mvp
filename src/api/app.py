@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import inspect
 import io
 import json
 import os
@@ -21,6 +22,12 @@ app = FastAPI(title="Ochiq-Eko-Ledger MVP", version="1.0",
 
 def get_conn():
     return db.connect()
+
+
+def _kutilgan_maydonlar(metod) -> str:
+    """Xizmat metodi qabul qiladigan maydonlar ro'yxati (400 xabari uchun)."""
+    nomlar = [p.name for p in inspect.signature(metod).parameters.values() if p.name != "now"]
+    return "So'rov maydonlari noto'g'ri. Qabul qilinadigan maydonlar: " + ", ".join(nomlar)
 
 
 def _latest_classes(conn) -> dict:
@@ -163,6 +170,9 @@ def create_appeal(body: dict):
         return svc.create(**body)
     except AppealError as e:
         raise HTTPException(400, str(e))
+    except TypeError:
+        # noma'lum yoki yetishmayotgan maydon — 500 emas, tushunarli 400 (R58 tuzatishi)
+        raise HTTPException(400, _kutilgan_maydonlar(svc.create)) from None
 
 
 @app.get("/v1/appeals/due")

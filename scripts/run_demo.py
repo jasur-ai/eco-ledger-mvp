@@ -76,7 +76,7 @@ def main():
     write_report(conn, res, classes, codes, dup_info, sla, due, texts)
     dist = res["stats"]["distribution"]
     print("Demo tayyor:")
-    print("  obyektlar:", len(res["facilities"]), "| zonа ranglari:", res["zone_color"])
+    print("  obyektlar:", len(res["facilities"]), "| zona ranglari:", res["zone_color"])
     print("  klass taqsimoti:", dist, "| pending (tekshiruv kutilmoqda):", res["stats"]["pending_review"])
     print("  murojaatlar:", len(codes), "| SLA:", sla, "| due:", due)
     print("  matnlar:", [t["verify_status"] for t in texts])

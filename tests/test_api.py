@@ -72,6 +72,11 @@ def test_appeal_flow_via_api(client):
     r3 = client.post(f"/v1/appeals/{code}/transitions",
                      json={"to_status": "hal_qilindi", "actor": "operator"})
     assert r3.status_code == 400
+    # noma'lum maydon yoki bo'sh so'rov — 500 emas, aniq 400 bo'lishi shart (R58)
+    r4 = client.post("/v1/appeals", json={"eco_id": "E-1002", "matn": "test"})
+    assert r4.status_code == 400 and "Qabul qilinadigan maydonlar" in r4.json()["detail"]
+    r5 = client.post("/v1/appeals", json={})
+    assert r5.status_code == 400 and "Qabul qilinadigan maydonlar" in r5.json()["detail"]
 
 
 def test_no_delete_endpoint(client):

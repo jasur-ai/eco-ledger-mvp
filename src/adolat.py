@@ -51,10 +51,19 @@ def explain_card(conn, eco_id: str) -> dict:
     cls = _row(conn, "SELECT indicator, ratio, confidence, zone_class, severity, rule_version, "
                      "reasons, computed_at FROM facility_classes WHERE eco_id=? "
                      "ORDER BY computed_at DESC, id DESC LIMIT 1", (eco_id,))
+    # R58 tuzatishi: o'lchov va norma — klassi hisoblangan AYNAN o'sha indikator bo'yicha
+    ind = (cls[0] if cls else None)
     m = _row(conn, "SELECT indicator, value, measured_at, method, n_sources, source_ref "
-                   "FROM measurements WHERE eco_id=? ORDER BY measured_at DESC, id DESC LIMIT 1", (eco_id,))
+                   "FROM measurements WHERE eco_id=? AND (? IS NULL OR indicator=?) "
+                   "ORDER BY measured_at DESC, id DESC LIMIT 1", (eco_id, ind, ind))
+    if m is None:      # klassi bor, o'lchovi yo'q — oxirgi mavjud o'lchovni ko'rsatamiz
+        m = _row(conn, "SELECT indicator, value, measured_at, method, n_sources, source_ref "
+                       "FROM measurements WHERE eco_id=? ORDER BY measured_at DESC, id DESC LIMIT 1", (eco_id,))
+        ind = m[0] if m else ind
     norm = _row(conn, "SELECT value, unit, basis, valid_from FROM norms WHERE indicator=? "
-                      "AND kind='one_time' LIMIT 1", (cls[0] if cls else (m[0] if m else ""),))
+                      "AND kind IN ('one_time', 'discharge') "
+                      "ORDER BY CASE kind WHEN 'one_time' THEN 0 ELSE 1 END LIMIT 1",
+                (m[0] if m else (ind or ""),))
     last_appeal = _row(conn, "SELECT public_code, status, responsible_body FROM appeals "
                              "WHERE eco_id=? ORDER BY created_at DESC LIMIT 1", (eco_id,)) \
         if _has(conn, "appeals") else None
@@ -143,8 +152,7 @@ def explain_card(conn, eco_id: str) -> dict:
         "tolgan_maydonlar": sum(1 for v in kartochka.values() if v["holat"] == "bor"),
         "uch_savol": {
             "nima_olchandi": (f"{m[2]}: {m[1]} {norm[1] if norm else ''} (usul: {m[3]})" if m else "ma'lumot yo'q"),
-            "nega_shunday_qaror": (f"R = {m[1]}/{norm[0] if norm else '?'} = {cls[1]:.2f} → "
-                                   f"{qoida_matni(cls[3], sabablar_royxati(cls[6]))}"
+            "nega_shunday_qaror": (_nega_matni(m, norm, cls, sabablar_royxati(cls[6]))
                                    if (m and norm and cls) else "hisob uchun ma'lumot yetarli emas"),
             "qanday_etiroz": (f"Botdan /murojaat yoki sayt formasi orqali; javob {JAVOB_KUN} kunda; "
                               f"apellyatsiya — {APELLYATSIYA_ISH_KUNI} ish kuni ichida"),
@@ -307,6 +315,23 @@ def sabablar_royxati(x) -> list[str]:
     except Exception:
         return [str(x)]
     return [str(i) for i in d] if isinstance(d, list) else [str(d)]
+
+
+def _nega_matni(m, norm, cls, sabablar: list[str]) -> str:
+    """«Nega shunday qaror» matni — ko'rsatilgan kasr AYNAN hisoblangan nisbatga mos bo'lishi shart.
+
+    R58 tuzatishi: ilgari o'lchov va norma turli indikatordan olinib, karta ichida
+    ziddiyatli arifmetika chiqarardi (masalan «8.4/35.0 = 1.40»). Endi mos kelmasa,
+    kasr ko'rsatilmaydi va hisob indikatori ochiq yoziladi.
+    """
+    qoida = qoida_matni(cls[3], sabablar)
+    if not (m and norm):
+        return f"R = {cls[1]:.2f} → {qoida}"
+    hisob = m[1] / norm[0] if norm[0] else None
+    if hisob is not None and abs(hisob - cls[1]) <= max(0.02, abs(cls[1]) * 0.02):
+        return f"R = {m[1]}/{norm[0]} = {cls[1]:.2f} → {qoida}"
+    return (f"R = {cls[1]:.2f} ({m[0]}-indikatori bo'yicha) → {qoida}"
+            f" · ko'rsatilgan o'lchov ({m[1]}) klassi hisoblangan indikatorga mos kelmaydi — qayta hisoblash talab qilinadi")
 
 
 def qoida_matni(zone: str, sabablar: list[str]) -> str:

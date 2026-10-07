@@ -161,6 +161,20 @@ def test_card_html_has_required_parts(conn):
     for i in range(1, 13):                                  # 12 maydon raqami ko'rinadi
         assert f">{i}</td>" in html
     assert "Nima o'lchandi" in html and "Nega shunday qaror" in html and "Qanday e'tiroz" in html
+    # R58: kartadagi arifmetika o'z-o'ziga mos bo'lishi shart (har obyekt uchun)
+    for eco in ("E-1001", "E-1003", "E-1005"):
+        h = adolat.card_html(conn, eco)
+        izoh = re.search(r"2\) Nega shunday qaror: ([^<\n]*)", h).group(1)
+        kasr = re.search(r"R = ([\d.]+)/([\d.]+) = ([\d.]+)", izoh)
+        if kasr:
+            a_, b_, c_ = (float(x) for x in kasr.groups())
+            assert abs(a_ / b_ - c_) <= 0.02, f"{eco}: ziddiyatli arifmetika → {izoh}"
+        assert "None" not in izoh and "?" not in izoh, f"{eco}: to'ldirilmagan maydon → {izoh}"
+        # qizil, lekin R < 2,0 bo'lsa — asosiy shart emas, qo'llanilgan qoida ko'rsatilishi kerak
+        if izoh.startswith("R =") and "Qizil" in izoh:
+            r_qiymat = float(re.search(r"= ([\d.]+) →", izoh).group(1))
+            if r_qiymat < 2.0:
+                assert "qo'llanilgan qoida" in izoh, f"{eco}: ziddiyatli izoh → {izoh}"
     assert "ОБЖАЛОВАНИЕ" in html                            # ruscha matn ham bor
     assert "<svg" in html                                   # QR kod ichida (tashqi resurs yo'q)
     assert "append-only" in html

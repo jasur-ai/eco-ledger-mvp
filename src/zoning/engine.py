@@ -137,7 +137,7 @@ def compute_facility(
 
     if not measured:
         return {
-            "zone": "blue", "severity": None, "R": None, "C": None,
+            "zone": "blue", "severity": None, "R": None, "C": None, "indicator": None,
             "pending_review": False, "overrides": [], "per_indicator": per_indicator,
             "reasons": ["Ma'lumot yo'q — «toza» degani emas, tekshiruv talab qilinadi"],
             "rule_version": RULE_VERSION,
@@ -145,6 +145,7 @@ def compute_facility(
 
     primary = max(measured, key=lambda p: p["R"])
     R, C = primary["R"], primary["C"]
+    primary_code = primary["code"]          # R aynan qaysi indikatordan olingan (R58 tuzatishi)
     zone = base_zone(R, C)
     pending_review = (zone == "blue" and R > CUT_EXCEED)   # sariq shtrix: tekshiruv kutilmoqda
 
@@ -198,7 +199,7 @@ def compute_facility(
         reasons.append("O6: stansiya sanoat zonasidan uzoq — C pasaytirildi")
 
     return {
-        "zone": zone,
+        "zone": zone, "indicator": primary_code,
         "severity": severity_of(R),
         "R": round(R, 3),
         "C": C,

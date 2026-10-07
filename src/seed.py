@@ -139,7 +139,7 @@ def seed(conn) -> dict:
         conn.execute(
             "INSERT INTO facility_classes(eco_id, indicator, ratio, confidence, zone_class, severity,"
             " rule_version, reasons, computed_at) VALUES (?,?,?,?,?,?,?,?,?)",
-            (f["eco_id"], "pm25", res["R"], res["C"], res["zone"], res["severity"], engine.RULE_VERSION,
+            (f["eco_id"], res.get("indicator") or "pm25", res["R"], res["C"], res["zone"], res["severity"], engine.RULE_VERSION,
              json.dumps(res["reasons"], ensure_ascii=False), NOW.strftime("%Y-%m-%d %H:%M:%S")))
         if res["zone"] in ("red", "yellow") or res["pending_review"]:
             db.add_event(conn, "class_change", eco_id=f["eco_id"], zone_id=f["zone_id"],

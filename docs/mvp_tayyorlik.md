@@ -1,4 +1,4 @@
-# 23 — LOYIHA 2 MVP TAYYORLIK HUKMI (OCHIQ-EKO-LEDGER) · **2026-10-01** (R54)
+# 23 — LOYIHA 2 MVP TAYYORLIK HUKMI (OCHIQ-EKO-LEDGER) · **2026-10-08** (R61)
 
 > # ✅ HA — LOYIHA 2 MVP TAYYOR
 > **Ishlaydigan, testlangan, jonli so'rovlarga javob beradigan va chegaralari yozib qo'yilgan
@@ -13,8 +13,8 @@
 |---|---|---|
 | **Ishlaydigan kod** | ✅ | 7 modul: `zoning` · `murojaat` · `adolat` · `notify` · `llm` · `bot` · `api` (`src/`) |
 | **Testlar** | ✅ | **193** — `zoning` 79 · `murojaat` 35 · `adolat` 25 · `bot` 19 · `notify` 17 · `llm` 10 · `api` 8 |
-| **CI (mustaqil klon)** | ✅ | `jasur-ai/eco-ledger-mvp` CI **#16** (`d05ac6a`) → **#17 yashil** (`cfb4749`, tayyorlik hujjati bilan) |
-| **Jonli proba (bugun)** | ✅ | 7 endpoint **200**: `/v1/health` · `/v1/geo/zones.geojson` · `/v1/export/measurements.csv` · `/v1/adolat/karta/E-1001/html` · `/v1/adolat/hisobot` · `/v1/kpi/sla` · `/v1/bot/summary` |
+| **CI (mustaqil klon)** | ✅ | `jasur-ai/eco-ledger-mvp` release kodi: **#21 yashil** (`1c4f6ed`, 08.10.2026 — asosiy indikator va karta arifmetikasi tuzatildi; **193 passed**). Ushbu tayyorlik hujjati aynan shu release holatini bayon qiladi. |
+| **Jonli proba (08.10.2026, yangi kod)** | ✅ | **9/9**: `/v1/health` **200** · `/v1/geo/zones.geojson` **200** · `/v1/appeals/due` **200** · `/v1/adolat/oyna?qaror_sanasi=2026-09-25` **200** · karta E-1003 **200** (`R = 8.4/6.0 = 1.40 → Qizil`, O1) · karta E-1001 **200** (`217.0/35.0 = 6.20`) · `/openapi.json` (16 yo'l) **200** · `POST /v1/appeals` noto'g'ri maydon **400** · bo'sh so'rov **400** (`500` emas). |
 | **Ma'lumot qatlami** | ✅ | `data/eco_ledger.db`: **78 obyekt · 73 o'lchov · 8 murojaat · 15 jadval** (audit izi: `events`, `appeal_events`, `audit_log`, `notification_log`) |
 | **Qayta ishlab chiqarish** | ✅ | `make demo` (seed → zona → hisobot → xarita) · `pytest` · `uvicorn src.api.app:app` |
 | **Bot** | ✅ **jonli** | `@ecoledg_bot` — `getMe` ✅ (id `8989725137`) · 4 qadamli FSM · 6 ssenariy · `docs/BOT-ISHLATISH.md` |
@@ -90,8 +90,9 @@ Ya'ni tizim faqat «ishlaydi» emas — **o'z SLA'sini o'lchab ko'rsatadi**.
 
 ## 6. Reproduksiya — uchta buyruq
 
+Quyidagi buyruqlarni L2 repozitoriyasi ildizida ishlating (ZIP'da: `Loyiha-2-OCHIQ-EKO-LEDGER/` papkasi):
+
 ```bash
-cd 02-Loyiha2-Trash-Organizer/MVP
 make demo                                       # DB seed + zona + hisobot + xarita
 python3 -m pytest -q                            # 193 passed
 uvicorn src.api.app:app --host 0.0.0.0 --port 8000   # API: /docs, /v1/kpi/sla, /v1/adolat/...
